@@ -399,7 +399,13 @@ def stat_cluster_texts(texts, n_clusters=None):
     if not HAS_SKLEARN or len(texts) < 3:
         return fallback_grouping(texts)
     try:
-        vectorizer = TfidfVectorizer(tokenizer=smart_tokenize, max_features=100, min_df=1, max_df=0.9)
+        vectorizer = TfidfVectorizer(
+            tokenizer=smart_tokenize,
+            token_pattern=None,
+            max_features=100,
+            min_df=1,
+            max_df=0.9,
+        )
         tfidf_matrix = vectorizer.fit_transform(texts)
     except Exception:
         return fallback_grouping(texts)
