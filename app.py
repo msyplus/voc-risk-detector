@@ -125,11 +125,18 @@ def get_client(model_key):
     if config["sdk_type"] == "openai":
         from openai import OpenAI
         if not config["key_required"]:
-            return OpenAI(base_url=config["base_url"], api_key="ollama")
+            if not check_ollama_available() or not check_ollama_model(config["model_id"]):
+                return None
+            return OpenAI(
+                base_url=config["base_url"],
+                api_key="ollama",
+                timeout=20.0,
+                max_retries=0,
+            )
         key = os.getenv(config["key_name"], "") or st.session_state.get(f"key_{model_key}", "")
         if not key:
             return None
-        return OpenAI(base_url=config["base_url"], api_key=key)
+        return OpenAI(base_url=config["base_url"], api_key=key, timeout=30.0, max_retries=0)
     elif config["sdk_type"] == "gemini":
         import google.generativeai as genai
         key = os.getenv("GEMINI_API_KEY", "") or st.session_state.get("key_gemini", "")
@@ -140,6 +147,7 @@ def get_client(model_key):
     return None
 
 
+@st.cache_data(ttl=30, show_spinner=False)
 def check_ollama_available():
     import socket
     try:
@@ -152,10 +160,16 @@ def check_ollama_available():
         return False
 
 
+@st.cache_data(ttl=30, show_spinner=False)
 def check_ollama_model(model_id="qwen2.5:3b"):
     try:
         from openai import OpenAI
-        client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+        client = OpenAI(
+            base_url="http://localhost:11434/v1",
+            api_key="ollama",
+            timeout=2.0,
+            max_retries=0,
+        )
         models = client.models.list()
         return model_id in [m.id for m in models]
     except Exception:
@@ -793,7 +807,7 @@ def show_rules_config():
                     kw_list = [kw.strip() for kw in new_val.replace(",", "、").split("、") if kw.strip()]
                     EVENT_TAXONOMY[l1]["children"][l2] = kw_list
 
-        if st.button("🔄 恢复默认规则", use_container_width=True):
+        if st.button("🔄 恢复默认规则", width='stretch'):
             for k in ["cfg_domain_kw", "cfg_sensitive_kw"]:
                 st.session_state.pop(k, None)
             # 恢复事件类型
@@ -816,7 +830,7 @@ def show_issue_report():
             itype = st.selectbox("类型", ["聚类不准确", "系统Bug", "功能建议", "数据问题", "界面体验", "其他"], key="voc_issue_type")
         with c2:
             iurg = st.selectbox("紧急度", ["一般", "重要", "紧急"], key="voc_issue_urg")
-        if st.button("提交问题", key="voc_issue_submit", type="primary", use_container_width=True):
+        if st.button("提交问题", key="voc_issue_submit", type="primary", width='stretch'):
             if not title.strip():
                 st.error("请填写标题")
             else:
@@ -847,7 +861,7 @@ def show_risk_calendar(df):
                     title="VOC 风险日历（横轴=日期，纵轴=事件类型，颜色深=量大，异常日总量>日均2x）",
                     color_continuous_scale="YlOrRd", aspect="auto")
     fig.update_xaxes(side="top", tickangle=45)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.caption("颜色越深=当日该类事件越多；可在时间序列Tab查看异常日详情")
 
 
@@ -905,11 +919,11 @@ def show_sidebar():
                 st.info("建议先使用「加载200条模拟VOC数据」完成演示；上传文件请使用 UTF-8 CSV，并保留文本列。")
         st.divider()
         st.subheader("📥 快速体验")
-        if st.button("🎲 加载200条模拟VOC数据", type="primary", use_container_width=True):
+        if st.button("🎲 加载200条模拟VOC数据", type="primary", width='stretch'):
             st.session_state["voc_working_df"] = generate_sample_data()
             st.rerun()
         if st.session_state.get("voc_working_df") is not None:
-            if st.button("🗑️ 清除数据", use_container_width=True):
+            if st.button("🗑️ 清除数据", width='stretch'):
                 st.session_state["voc_working_df"] = None
                 st.rerun()
         st.divider()
@@ -930,7 +944,7 @@ def show_sidebar():
         if st.session_state.get("voc_working_df") is not None:
             st.divider()
             st.subheader("📄 风险报告")
-            if st.button("🎯 一键生成风险报告", type="primary", use_container_width=True):
+            if st.button("🎯 一键生成风险报告", type="primary", width='stretch'):
                 df_tmp = st.session_state["voc_working_df"]
                 # 重新运行统计聚类以获取最新结果
                 stat_c = stat_cluster_texts(df_tmp["voc_text"].tolist())
@@ -940,7 +954,7 @@ def show_sidebar():
                 st.session_state["risk_report"] = report
                 st.download_button("⬇️ 下载报告 (Markdown)", data=report,
                                    file_name=f"VOC风险报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
-                                   mime="text/markdown", use_container_width=True)
+                                   mime="text/markdown", width='stretch')
             if "risk_report" in st.session_state:
                 with st.expander("预览报告", expanded=False):
                     st.markdown(st.session_state["risk_report"])
@@ -1027,7 +1041,7 @@ def show_voc_results(df, stat_clusters, time_anomalies, ai_clusters, model_key, 
                     color_discrete_sequence=px.colors.qualitative.Set2,
                 )
                 fig_sun.update_traces(textinfo="label+percent entry")
-                st.plotly_chart(fig_sun, use_container_width=True)
+                st.plotly_chart(fig_sun, width='stretch')
 
         with col_e2:
             # 一级事件统计卡片
@@ -1068,7 +1082,7 @@ def show_voc_results(df, stat_clusters, time_anomalies, ai_clusters, model_key, 
                 cd = cd.sort_values("数量", ascending=True)
                 fig = px.bar(cd, x="数量", y="主题", orientation="h", title="统计聚类分布",
                              color_discrete_sequence=["#2196F3"])
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
             # AI 聚类结果
             if ai_clusters:
@@ -1097,7 +1111,7 @@ def show_voc_results(df, stat_clusters, time_anomalies, ai_clusters, model_key, 
             kw = extract_keywords_from_texts(df["voc_text"].tolist(), top_n=30)
             kwd = pd.DataFrame(kw, columns=["关键词", "频次"])
             fig = px.bar(kwd.head(20), x="关键词", y="频次", title="Top 20 关键词")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
     with tab2:
         st.subheader("时间序列异常检测")
@@ -1130,7 +1144,8 @@ def show_voc_results(df, stat_clusters, time_anomalies, ai_clusters, model_key, 
             if len(dc) >= 3:
                 last_vals = dc["count"].tail(3).tolist()
                 last_ma = dc["MA"].iloc[-1]
-                slope = (last_vals[-1] - last_vals[0]) / max(1, (dc.index[-1] - dc.index[-3]).days)
+                date_span = pd.to_datetime(dc["date"].iloc[-1]) - pd.to_datetime(dc["date"].iloc[-3])
+                slope = (last_vals[-1] - last_vals[0]) / max(1, date_span.days)
                 from datetime import timedelta
                 pred_dates = [dc["date"].iloc[-1] + timedelta(days=i) for i in range(1, 4)]
                 pred_vals = [last_ma + slope * i for i in range(1, 4)]
@@ -1146,7 +1161,7 @@ def show_voc_results(df, stat_clusters, time_anomalies, ai_clusters, model_key, 
                 st.info(f"📈 {pred_note}")
 
             fig.update_layout(height=400, title="VOC日趋势与异常检测", hovermode="x unified")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             if time_anomalies:
                 st.warning(f"检测到 {len(time_anomalies)} 个时间异常点")
         else:
@@ -1241,7 +1256,7 @@ def show_voc_results(df, stat_clusters, time_anomalies, ai_clusters, model_key, 
             dd["一级事件"] = df["一级事件"]
             dd["二级事件"] = df["二级事件"]
         dc = [c for c in ["voc_id", "voc_text", "一级事件", "二级事件", "聚类标签", "order_amount", "create_time", "含敏感词"] if c in dd.columns]
-        st.dataframe(dd[dc], use_container_width=True, height=400)
+        st.dataframe(dd[dc], width='stretch', height=400)
         st.download_button("⬇️ 导出CSV", data=dd.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig"),
                            file_name=f"VOC分析_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
 
