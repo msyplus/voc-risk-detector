@@ -899,8 +899,10 @@ def show_sidebar():
                     st.success(f"已加载 {len(df)} 条")
                 else:
                     st.error("未找到文本列")
+                    st.info("请确认 CSV 至少包含以下任一列名：voc_text、complaint_text、客诉文本、投诉内容、text、content。")
             except Exception as e:
                 st.error(f"读取失败: {e}")
+                st.info("建议先使用「加载200条模拟VOC数据」完成演示；上传文件请使用 UTF-8 CSV，并保留文本列。")
         st.divider()
         st.subheader("📥 快速体验")
         if st.button("🎲 加载200条模拟VOC数据", type="primary", use_container_width=True):
@@ -948,9 +950,11 @@ def show_sidebar():
 
 def show_welcome():
     st.markdown("""
-    ### 👋 VOC批量异常风险识别与预警系统 v3.2
+    ### 👋 批量异常识别与服务风险预警 v3.2
 
-    **多引擎架构** — 统计引擎（TF-IDF+KMeans）+ 4 个 AI 引擎可选
+    这个 Demo 模拟服务 AI 工作流的第二步：从大量 VOC 中发现**聚集事件、敏感风险、时间异常和可响应预警**。
+
+    **默认无需 API Key**：统计引擎（TF-IDF + KMeans + 时间检测）可直接演示；接入 AI 引擎后可增强语义聚类和风险总结。
 
     #### 🎯 双引擎能力
 
@@ -960,10 +964,10 @@ def show_welcome():
     | 异常检测 | 滑动窗口时间序列 | 语义级事件聚类 |
     | 预警建议 | 固定 SOP 模板 | 针对性根因分析+响应方案 |
 
-    #### 🚀 快速体验
-    1. 侧边栏选择引擎（默认统计引擎即时可用）
-    2. 点击加载 200 条模拟 VOC 数据
-    3. 切换 AI 引擎查看语义聚类效果
+    #### 🚀 面试演示路径
+    1. 直接点击侧边栏 **加载 200 条模拟 VOC 数据**。
+    2. 查看事件类型、统计聚类、时间序列和预警面板。
+    3. 点击 **一键生成风险报告**，展示从识别到响应建议的闭环。
     """)
     st.info("👈 在侧边栏选择引擎 → 加载数据 → 查看聚类和预警结果")
 
