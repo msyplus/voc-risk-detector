@@ -1,10 +1,10 @@
-# 批量异常识别与服务风险预警
+﻿# 批量异常识别与服务风险预警
 
 面向 VOC 和客诉运营场景的批量异常检测 Demo。系统通过统计聚类、敏感风险识别和时间异常检测，将分散的用户声音聚合为可响应的服务风险信号。
 
 ## 在线演示
 
-https://voc-risk-detector-mgneov7ezrugxnxdwoynzf.streamlit.app
+https://voc-risk-detector-mgneov7ezrugngxdwoynzf.streamlit.app
 
 ## 业务背景
 
@@ -49,3 +49,4 @@ streamlit run app.py
 - 预警系统的核心不是信息收集，而是信息过滤和优先级排序。
 - 如何用统计规则先做稳定兜底，再用 LLM 做语义增强。
 - 如何把批量事件处理经验沉淀为可复用的风险识别系统。
+
